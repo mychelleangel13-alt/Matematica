@@ -444,12 +444,7 @@ function renderAtividades() {
   });
 
   const p = document.getElementById('panel-atividades');
-  const webhookAviso = !n8nWebhookUrl
-    ? `<div class="webhook-notice" style="margin-bottom:14px">
-        ⚠️ <span>Configure o webhook da professora IA na aba <strong>💬 Dúvidas</strong> para gerar questões e usar correção/explicação com IA.</span>
-       </div>`
-    : '';
-  p.innerHTML = webhookAviso + `
+  p.innerHTML = `
     <div class="act-toolbar">
       <div class="act-toolbar-left">
         <button class="btn-primary" id="btn-gen-q" style="background:${m.color}" onclick="gerarAtividade('questao')">⚡ Gerar Questão</button>
@@ -606,18 +601,14 @@ async function aiAction(actId, tipo) {
 
 // ── Dúvidas (chat com IA via n8n) ──
 let chatHistory = [];
-let n8nWebhookUrl = localStorage.getItem('n8n_webhook_url') || '';
+let n8nWebhookUrl = 'https://mychelle.app.n8n.cloud/webhook/c1fb86f2-88e8-4fa8-96a1-c41f0d61e1ae';
 let chatSessionId = 'session_' + Date.now();
 
 function renderDuvidas() {
   const m = currentMod;
   const p = document.getElementById('panel-duvidas');
   p.innerHTML = `
-    <div class="webhook-notice" id="webhook-config">
-      <span>🔗</span>
-      <input type="text" id="webhook-url-input" placeholder="Ex: https://mychelle.app.n8n.cloud/webhook/seu-id" value="${n8nWebhookUrl}" oninput="updateWebhookUrl()">
-      <button onclick="saveWebhookUrl()">Salvar</button>
-    </div>
+
     <div class="chat-wrap">
       <div class="chat-messages" id="chat-messages">
         <div class="chat-empty" id="chat-empty">
@@ -649,16 +640,7 @@ function getSuggestions(m) {
   return base.slice(0,3);
 }
 
-function updateWebhookUrl() {
-  n8nWebhookUrl = document.getElementById('webhook-url-input').value.trim();
-}
-function saveWebhookUrl() {
-  n8nWebhookUrl = document.getElementById('webhook-url-input').value.trim();
-  localStorage.setItem('n8n_webhook_url', n8nWebhookUrl);
-  const btn = document.querySelector('#webhook-config button');
-  btn.textContent = '✓ Salvo!';
-  setTimeout(()=>{ btn.textContent='Salvar'; }, 1500);
-}
+
 
 function autoResize(el) {
   el.style.height = 'auto';
