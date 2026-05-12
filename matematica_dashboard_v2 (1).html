@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 Maths Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface2: #f1f0eb;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a1a;
+    --text2: #555;
+    --text3: #888;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Header */
+  #header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; }
+  #header-left { display: flex; align-items: center; gap: 10px; }
+  #back-btn { background: none; border: none; cursor: pointer; font-size: 20px; padding: 0 4px; color: var(--text2); display: none; }
+  #header-title { font-size: 17px; font-weight: 700; }
+  #header-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  #header-right { display: flex; gap: 8px; align-items: center; }
+  #search-input { padding: 7px 12px; border-radius: 8px; font-size: 13px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text); width: 155px; outline: none; }
+  #search-input:focus { border-color: #4A90D9; }
+  .btn-add-global { padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; background: #4A90D9; color: #fff; border: none; font-weight: 600; }
+
+  /* Main */
+  #main { max-width: 960px; margin: 0 auto; padding: 20px 16px; }
+
+  /* Stats */
+  #stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 14px 16px; border: 0.5px solid var(--border); }
+  .stat-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 700; }
+
+  /* Module grid */
+  #module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 12px; }
+  .mod-card { background: var(--surface); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; border: 0.5px solid var(--border); border-top-width: 3px; transition: transform 0.14s; }
+  .mod-card:hover { transform: translateY(-2px); }
+  .mod-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .mod-icon { font-size: 24px; }
+  .mod-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .mod-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .mod-topics { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+  .calc-tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: #f0f0f0; color: #666; display: inline-block; }
+
+  /* Module view */
+  #module-view { display: none; background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 0; overflow: hidden; }
+  .mv-tabs { display: flex; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; padding: 0 4px; }
+  .mv-tab { padding: 11px 16px; font-size: 13px; cursor: pointer; border: none; background: transparent; border-bottom: 2px solid transparent; color: var(--text3); font-weight: 500; transition: all 0.12s; white-space: nowrap; }
+  .mv-tab.active { font-weight: 600; border-bottom-color: currentColor; }
+  .mv-panel { display: none; padding: 22px; }
+  .mv-panel.active { display: block; }
+
+  /* Teoria */
+  .topics-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .topic-pill { padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+  .summary-box { background: var(--surface2); border-radius: var(--radius); padding: 18px; line-height: 1.7; font-size: 14px; }
+  .summary-box p { margin-bottom: 6px; color: var(--text2); }
+  .summary-box strong { color: var(--text); }
+  .summary-box pre { font-family: monospace; font-size: 13px; background: var(--surface); padding: 10px; border-radius: 6px; margin: 6px 0; white-space: pre-wrap; }
+
+  /* Atividades */
+  .act-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .act-toolbar-left { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-primary { padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; color: #fff; border: none; font-weight: 600; }
+  .btn-outline { padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; background: transparent; border: 0.5px solid var(--border2); color: var(--text2); font-weight: 500; }
+  .btn-outline:hover { background: var(--surface2); }
+
+  .add-manual-box { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 0.5px solid var(--border2); }
+  .add-manual-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .tipo-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .tipo-btn { padding: 5px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); }
+  .tipo-btn.active { color: #fff; border-color: transparent; }
+  textarea, input[type=text], input[type=number] { width: 100%; padding: 8px 10px; border-radius: 8px; font-size: 13px; border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; outline: none; }
+  textarea:focus, input[type=text]:focus, input[type=number]:focus { border-color: #4A90D9; }
+  textarea { resize: vertical; }
+  .field-label { font-size: 12px; color: var(--text3); display: block; margin-bottom: 5px; }
+  .field-wrap { margin-bottom: 10px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+
+  .act-empty { text-align: center; padding: 40px; color: var(--text3); }
+  .act-empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+  .act-item { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; position: relative; }
+  .act-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .act-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+  .act-delete { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text3); opacity: 0.5; padding: 0 4px; }
+  .act-delete:hover { opacity: 1; }
+  .act-enunciado { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+  .act-equacao { background: var(--surface2); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-family: monospace; font-size: 15px; }
+  .act-resp { margin-bottom: 8px; min-height: 55px; }
+  .act-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .act-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; border: none; }
+  .act-btn-outline { padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; background: transparent; }
+  .act-feedback { margin-top: 12px; padding: 14px; border-radius: 10px; background: var(--surface2); }
+  .act-feedback-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .act-feedback-body { font-size: 13px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; }
+
+  /* Resumo */
+  .resumo-box { background: var(--surface2); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .resumo-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .ai-resumo-box { background: var(--surface2); border-radius: var(--radius); padding: 18px; border: 0.5px solid var(--border2); margin-top: 14px; display: none; }
+  .ai-resumo-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .ai-resumo-content { font-size: 13px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; }
+
+  /* Calculadoras */
+  .calc-box { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-top: 10px; }
+  .calc-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .calc-type-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .calc-type-btn { padding: 5px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); }
+  .calc-type-btn.active { color: #fff; border-color: transparent; }
+  .calc-fields { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .calc-fields > div { flex: 1; min-width: 80px; }
+  .calc-result { margin-top: 10px; padding: 12px; background: var(--surface); border-radius: 8px; border: 0.5px solid var(--border2); }
+  .calc-result-val { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .calc-result-eq { font-family: monospace; font-size: 12px; color: var(--text2); background: var(--surface2); padding: 8px 10px; border-radius: 6px; white-space: pre-wrap; }
+  .calc-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .calc-two-results { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .calc-mini-card { background: var(--surface); border-radius: 8px; padding: 12px; border: 0.5px solid var(--border2); text-align: center; }
+  .calc-mini-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .calc-mini-val { font-size: 20px; font-weight: 700; }
+
+  /* Regra de 3 table */
+  .r3-table { background: var(--surface); border-radius: 8px; padding: 12px; margin-bottom: 10px; border: 0.5px solid var(--border); }
+  .r3-row { display: grid; grid-template-columns: 1fr 32px 1fr; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .r3-sep { color: var(--text3); font-size: 18px; text-align: center; padding-bottom: 8px; }
+  .r3-x-result { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 600; min-height: 34px; }
+
+  /* Modal */
+  #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.48); display: none; align-items: center; justify-content: center; z-index: 100; }
+  #modal-overlay.open { display: flex; }
+  #modal { background: var(--surface); border-radius: 16px; padding: 26px; max-width: 490px; width: 92%; max-height: 88vh; overflow-y: auto; }
+  #modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  #modal-header h2 { font-size: 16px; font-weight: 700; }
+  #modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text3); }
+
+  /* Loading dots */
+  .dots { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.4; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:scale(0.8);opacity:0.3} 40%{transform:scale(1.2);opacity:1} }
+
+  /* Floating home button */
+  #float-home {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--text);
+    color: var(--surface);
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    z-index: 90;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  #float-home:hover { transform: scale(1.1); box-shadow: 0 6px 22px rgba(0,0,0,0.24); }
+  #float-home.visible { display: flex; }
+
+  /* Chat / Dúvidas */
+  .chat-wrap { display: flex; flex-direction: column; height: 520px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 4px 0 12px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-bubble { max-width: 88%; padding: 12px 15px; border-radius: 14px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; }
+  .chat-bubble.user { background: var(--text); color: var(--surface); align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-bubble.ai { background: var(--surface2); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 0.5px solid var(--border); }
+  .chat-bubble.ai strong { color: var(--text); }
+  .chat-input-row { display: flex; gap: 8px; padding-top: 12px; border-top: 0.5px solid var(--border); margin-top: 4px; }
+  .chat-input-row textarea { flex: 1; padding: 10px 12px; border-radius: 10px; font-size: 13px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text); font-family: inherit; resize: none; outline: none; min-height: 42px; max-height: 120px; }
+  .chat-input-row textarea:focus { border-color: #4A90D9; }
+  .chat-send-btn { padding: 0 16px; border-radius: 10px; font-size: 18px; cursor: pointer; background: var(--text); color: var(--surface); border: none; align-self: flex-end; height: 42px; transition: opacity 0.15s; }
+  .chat-send-btn:disabled { opacity: 0.4; }
+  .chat-empty { text-align: center; padding: 40px 20px; color: var(--text3); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .chat-empty-icon { font-size: 38px; }
+  .chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chat-sugg-btn { padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text2); cursor: pointer; transition: background 0.12s; }
+  .chat-sugg-btn:hover { background: var(--border); }
+
+  /* n8n webhook banner */
+  .webhook-notice { background: #fff8e1; border: 0.5px solid #f9ca49; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #7a5c00; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .webhook-notice input { flex:1; padding: 5px 8px; border-radius: 6px; font-size: 12px; border: 0.5px solid #f9ca49; background: #fff; color: var(--text); outline: none; }
+  .webhook-notice button { padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; background: #f9ca49; border: none; font-weight: 600; color: #7a5c00; }
+
+  @media(max-width:520px) {
+    #header { padding: 11px 14px; }
+    #main { padding: 14px 10px; }
+    .mv-panel { padding: 14px; }
+    .calc-grid-3 { grid-template-columns: 1fr; }
+    #float-home { bottom: 16px; right: 16px; width: 44px; height: 44px; font-size: 18px; }
+    .chat-wrap { height: 420px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <div id="header-left">
+    <button id="back-btn" onclick="goHome()">←</button>
+    <div>
+      <div id="header-title">📚 Maths Dashboard</div>
+      <div id="header-sub"></div>
+    </div>
+  </div>
+  <div id="header-right">
+    <input id="search-input" type="text" placeholder="Buscar módulo..." oninput="renderGrid()">
+    <button class="btn-add-global" onclick="openModal()">+ Adicionar</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <!-- Dashboard -->
+  <div id="dashboard-view">
+    <div id="stats"></div>
+    <div id="module-grid"></div>
+  </div>
+
+  <!-- Module -->
+  <div id="module-view">
+    <div class="mv-tabs" id="mv-tabs"></div>
+    <div id="mv-panels"></div>
+  </div>
+</div>
+
+<!-- Floating home button -->
+<button id="float-home" onclick="goHome()" title="Voltar ao início">🏠</button>
+
+<!-- Global Add Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h2>Adicionar Questão</h2>
+      <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label">Matéria</label>
+      <select id="modal-mod" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;border:0.5px solid var(--border2);background:var(--surface2);color:var(--text);outline:none;"></select>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label">Tipo</label>
+      <div class="tipo-row" id="modal-tipo-row">
+        <button class="tipo-btn active" style="background:#4A90D9" data-tipo="questao" onclick="setModalTipo('questao',this)">📝 Questão</button>
+        <button class="tipo-btn" data-tipo="equacao" onclick="setModalTipo('equacao',this)">= Equação</button>
+      </div>
+    </div>
+    <div class="field-wrap">
+      <label class="field-label">Enunciado</label>
+      <textarea id="modal-enunciado" rows="3" placeholder="Digite a questão ou enunciado..."></textarea>
+    </div>
+    <div class="field-wrap" id="modal-eq-wrap" style="display:none">
+      <label class="field-label">Equação</label>
+      <input type="text" id="modal-equacao" placeholder="Ex: 3x + 7 = 22" style="font-family:monospace">
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="modal-save-btn" style="background:#4A90D9;flex:1" onclick="saveModal()">Adicionar</button>
+      <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODULES = [
+  { id:"operacoes", name:"Operações Básicas", icon:"➕", color:"#4A90D9", hasCalc:false, topics:["Soma","Subtração","Multiplicação","Divisão","Ordem das operações"] },
+  { id:"fracoes", name:"Frações", icon:"½", color:"#7B68EE", hasCalc:false, topics:["Numerador e denominador","Frações equivalentes","Simplificação","Soma/Subtração","Multiplicação/Divisão","Fração para decimal"] },
+  { id:"porcentagem", name:"Porcentagem", icon:"%", color:"#E67E22", hasCalc:true, topics:["O que é porcentagem","Transformar em número","Calcular porcentagem","Aumento percentual","Desconto percentual"] },
+  { id:"razao", name:"Razão e Proporção", icon:"⚖", color:"#27AE60", hasCalc:false, topics:["O que é razão","O que é proporção","Comparando valores","Divisão proporcional","Escalas e mapas"] },
+  { id:"regratres", name:"Regra de Três", icon:"✕÷", color:"#E74C3C", hasCalc:true, topics:["Regra de três simples direta","Regra de três simples inversa","Como identificar","Regra de três composta"] },
+  { id:"jurossimples", name:"Juros Simples", icon:"💰", color:"#16A085", hasCalc:true, topics:["Capital, taxa e tempo","Fórmula dos juros simples","Problemas do cotidiano"] },
+  { id:"juroscompostos", name:"Juros Compostos", icon:"📈", color:"#8E44AD", hasCalc:true, topics:["Diferença juros simples vs compostos","Fórmula dos juros compostos","Crescimento exponencial"] },
+  { id:"equacao1", name:"Equação 1º Grau", icon:"x", color:"#2980B9", hasCalc:false, topics:["O que é uma equação","Como isolar o x","Regras dos sinais","Problemas interpretativos"] },
+  { id:"equacao2", name:"Equação 2º Grau", icon:"x²", color:"#C0392B", hasCalc:false, topics:["Identificando a, b e c","O que é delta","Fórmula de Bhaskara","Resolução passo a passo"] },
+  { id:"sistema", name:"Sistema de Equações", icon:"≡", color:"#1ABC9C", hasCalc:false, topics:["Método da substituição","Método da adição","Problemas interpretativos"] },
+  { id:"probabilidade", name:"Probabilidade", icon:"🎲", color:"#F39C12", hasCalc:false, topics:["Casos possíveis e favoráveis","Probabilidade em porcentagem","Exemplos com dados e moedas"] },
+  { id:"combinatoria", name:"Análise Combinatória", icon:"🔢", color:"#D35400", hasCalc:false, topics:["Princípio fundamental da contagem","Permutação","Arranjo","Combinação"] },
+  { id:"estatistica", name:"Estatística Básica", icon:"📊", color:"#2C3E50", hasCalc:false, topics:["Média aritmética","Mediana","Moda","Leitura de gráficos","Interpretação de tabelas"] },
+  { id:"logica", name:"Raciocínio Lógico", icon:"🧠", color:"#6C3483", hasCalc:false, topics:["Sequências numéricas","Padrões e repetições","Verdadeiro ou falso","Tabelas verdade"] },
+  { id:"geometria", name:"Geometria Básica", icon:"📐", color:"#117A65", hasCalc:true, topics:["Quadrado e retângulo","Triângulos","Área e perímetro","Círculo","Volume","Teorema de Pitágoras"] },
+];
+
+const SUMMARIES = {
+  operacoes:`OPERAÇÕES BÁSICAS\n\nAs quatro operações fundamentais são: soma (+), subtração (-), multiplicação (×) e divisão (÷).\n\nOrdem das operações (PEMDAS):\n1. Parênteses\n2. Expoentes\n3. Multiplicação e Divisão (da esquerda para direita)\n4. Adição e Subtração (da esquerda para direita)\n\nExemplo: 2 + 3 × 4 = 2 + 12 = 14 (não 20!)`,
+  fracoes:`FRAÇÕES\n\nUma fração representa uma parte de um todo. Ex: 3/4 = três quartos.\n\nNumerador = parte de cima | Denominador = parte de baixo\n\nSimplificar: divida numerador e denominador pelo mesmo número.\nEx: 6/9 → ÷3 → 2/3\n\nSoma: mesmo denominador → soma os numeradores.\nDenominadores diferentes → encontre o MMC.\n\nMultiplicação: multiplica direto. Ex: 2/3 × 3/4 = 6/12 = 1/2\n\nDivisão: inverte a segunda fração e multiplica. Ex: 2/3 ÷ 1/4 = 2/3 × 4/1 = 8/3`,
+  porcentagem:`PORCENTAGEM\n\nPorcentagem significa "por cem". Ex: 30% = 30/100 = 0,30\n\nCalcular X% de Y: Y × (X/100)\nEx: 20% de 150 = 150 × 0,20 = 30\n\nAumento de X%: valor × (1 + X/100)\nEx: R$200 com aumento de 15% = 200 × 1,15 = R$230\n\nDesconto de X%: valor × (1 - X/100)\nEx: R$200 com desconto de 15% = 200 × 0,85 = R$170\n\nErro comum: "25% de desconto depois de 25% de aumento" NÃO volta ao valor original!`,
+  razao:`RAZÃO E PROPORÇÃO\n\nRazão: comparação entre dois valores. Ex: 3:4 ou 3/4\n\nProporção: duas razões iguais. Ex: 2/4 = 3/6 (ambas equivalem a 1/2)\n\nRegra do produto cruzado: se a/b = c/d, então a×d = b×c\n\nDivisão proporcional: dividir um valor nas proporções dadas.\nEx: R$120 na proporção 1:3 → 1+3=4 partes → 120/4=30 → R$30 e R$90\n\nEscala de mapa: 1:50.000 significa 1cm = 50.000cm = 500m na realidade`,
+  regratres:`REGRA DE TRÊS\n\nDireta: quando uma grandeza aumenta, a outra também aumenta.\nEx: 3 maçãs custam R$6 → 5 maçãs custam quanto?\n3 — 6\n5 — x → x = (5×6)/3 = R$10\n\nInversa: quando uma grandeza aumenta, a outra diminui.\nEx: 4 pedreiros fazem um muro em 6 dias. 8 pedreiros fazem em quantos dias?\n4 — 6\n8 — x → inverte! x = (4×6)/8 = 3 dias\n\nComo identificar: pense na lógica — mais trabalhadores = menos tempo (inversa). Mais produto = mais caro (direta).`,
+  jurossimples:`JUROS SIMPLES\n\nFórmula: J = C × i × t\nOnde: J = juros, C = capital, i = taxa, t = tempo\n\nMontante: M = C + J = C × (1 + i × t)\n\nExemplo:\nCapital = R$1.000, taxa = 5% ao mês, tempo = 3 meses\nJ = 1000 × 0,05 × 3 = R$150\nMontante = R$1.150\n\nAtenção: taxa e tempo precisam estar na MESMA unidade!\nSe a taxa é mensal, o tempo deve ser em meses.`,
+  juroscompostos:`JUROS COMPOSTOS\n\nFórmula: M = C × (1 + i)^t\nOnde: M = montante, C = capital, i = taxa, t = tempo\n\nExemplo:\nR$1.000 a 5% ao mês por 3 meses:\nM = 1000 × (1,05)³ = 1000 × 1,1576 = R$1.157,63\n\nDiferença dos juros simples: os juros simples dariam apenas R$1.150.\nNos compostos, os juros rendem sobre juros.\n\nA diferença cresce muito com o tempo! Em 10 anos pode ser enorme.`,
+  equacao1:`EQUAÇÃO DO 1º GRAU\n\nEquação com incógnita elevada à potência 1.\nEx: 2x + 5 = 11\n\nComo resolver:\n1. Passe os números para um lado e o x para outro\n2. Ao passar um valor para o outro lado, TROCA o sinal\n\n2x + 5 = 11\n2x = 11 - 5\n2x = 6\nx = 6/2\nx = 3 ✓\n\nVerificação: substitua: 2(3) + 5 = 6 + 5 = 11 ✓`,
+  equacao2:`EQUAÇÃO DO 2º GRAU\n\nForma geral: ax² + bx + c = 0\n\nFórmula de Bhaskara:\nx = (-b ± √Δ) / 2a\nOnde Δ = b² - 4ac\n\nSe Δ > 0: duas raízes reais diferentes\nSe Δ = 0: uma raiz real\nSe Δ < 0: sem raízes reais\n\nExemplo: x² - 5x + 6 = 0 → a=1, b=-5, c=6\nΔ = 25 - 24 = 1\nx = (5 ± 1)/2 → x₁ = 3 e x₂ = 2`,
+  sistema:`SISTEMA DE EQUAÇÕES\n\nDuas equações com duas incógnitas.\n\nMétodo da substituição:\nIsole uma variável em uma equação e substitua na outra.\n\nEx: { x + y = 10 e x - y = 2\nDa 2ª: x = y + 2\nSubstitui na 1ª: (y+2) + y = 10 → 2y = 8 → y = 4\nx = 4 + 2 = 6\n\nMétodo da adição (ou eliminação):\nSome as equações para eliminar uma variável.\nMultiplique uma equação se necessário.`,
+  probabilidade:`PROBABILIDADE\n\nP(E) = Casos favoráveis / Total de casos possíveis\n\nResultado: sempre entre 0 (impossível) e 1 (certo)\nPode ser em fração, decimal ou porcentagem.\n\nExemplo — dado:\nP(número par) = 3/6 = 1/2 = 50%\n(pares: 2, 4, 6 → 3 casos favoráveis de 6 possíveis)\n\nExemplo — moeda:\nP(cara) = 1/2 = 50%\n\nEventos independentes (E): multiplica as probabilidades.\nP(cara E cara) = 1/2 × 1/2 = 1/4`,
+  combinatoria:`ANÁLISE COMBINATÓRIA\n\nPrincípio Fundamental: se um evento ocorre de m modos e outro de n modos, juntos ocorrem de m×n modos.\n\nPermutação (ordem importa, usa todos): P(n) = n!\nEx: anagramas de "ANA" = 3!/2! = 3\n\nArranjo (ordem importa, usa parte): A(n,p) = n!/(n-p)!\nEx: 3 primeiros lugares entre 5: A(5,3) = 60\n\nCombinação (ordem NÃO importa): C(n,p) = n! / (p! × (n-p)!)\nEx: escolher 3 de 5: C(5,3) = 10`,
+  estatistica:`ESTATÍSTICA BÁSICA\n\nMédia: soma de todos / quantidade\nEx: notas 7, 8, 9, 6 → média = (7+8+9+6)/4 = 30/4 = 7,5\n\nMediana: valor central após ordenar\nEx: 6, 7, 8, 9 → (7+8)/2 = 7,5\nEx: 5, 7, 9 → mediana = 7\n\nModa: valor que mais aparece\nEx: 3, 5, 5, 7, 8 → moda = 5\n\nGráficos: barras (comparação), pizza (proporção), linha (evolução)`,
+  logica:`RACIOCÍNIO LÓGICO\n\nSequências numéricas: encontre o padrão!\nEx: 2, 4, 8, 16, ... → multiplica por 2 → próximo: 32\nEx: 1, 4, 9, 16, ... → quadrados perfeitos → próximo: 25\n\nProposição: afirmação que pode ser V ou F\nNegação: troca V por F e vice-versa\n\nConectivos:\n• E (conjunção): V e V = V; qualquer F = F\n• OU (disjunção): qualquer V = V; F e F = F\n• SE...ENTÃO: só é F quando premissa V e conclusão F`,
+  geometria:`GEOMETRIA BÁSICA\n\nQuadrado: lado l → Área = l² | Perímetro = 4l\nRetângulo: base b, altura h → Área = b×h | Perímetro = 2(b+h)\nTriângulo: base b, altura h → Área = (b×h)/2\nCírculo: raio r → Área = π×r² | Perímetro = 2πr\n\nTeorema de Pitágoras: a² + b² = c²\n(c = hipotenusa, maior lado do triângulo retângulo)\nEx: catetos 3 e 4 → hipotenusa = √(9+16) = √25 = 5\n\nVolume do cubo: l³\nVolume do paralelepípedo: comprimento × largura × altura`,
+};
+
+// ── State ──
+let state = { activities: [] };
+let currentMod = null;
+let modalTipo = 'questao';
+
+function loadState() {
+  try { const r = localStorage.getItem('math_dash'); if(r) state = JSON.parse(r); } catch{}
+}
+function saveState() {
+  try { localStorage.setItem('math_dash', JSON.stringify(state)); } catch{}
+}
+
+// ── Claude API ──
+async function callClaude(messages, sys) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:sys, messages })
+  });
+  const d = await r.json();
+  return (d.content||[]).map(c=>c.text||'').join('') || 'Erro na resposta.';
+}
+
+// ── Dots ──
+function dots() { return '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>'; }
+
+// ── Render Grid ──
+function renderStats() {
+  const totalActs = state.activities.length;
+  const manuals = state.activities.filter(a=>a.manual).length;
+  document.getElementById('stats').innerHTML = [
+    {label:'Módulos',value:MODULES.length,color:'#4A90D9'},
+    {label:'Atividades',value:totalActs,color:'#27AE60'},
+    {label:'Com calculadora',value:MODULES.filter(m=>m.hasCalc).length,color:'#E67E22'},
+    {label:'Manuais',value:manuals,color:'#8E44AD'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.color}">${s.value}</div></div>`).join('');
+  document.getElementById('header-sub').textContent = totalActs + ' atividade' + (totalActs!==1?'s':'') + ' no total';
+}
+
+function renderGrid() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = MODULES.filter(m => !q || m.name.toLowerCase().includes(q));
+  document.getElementById('module-grid').innerHTML = filtered.map(mod => {
+    const count = state.activities.filter(a=>a.modId===mod.id).length;
+    return `<div class="mod-card" style="border-top-color:${mod.color}" onclick="openMod('${mod.id}')">
+      <div class="mod-card-top">
+        <span class="mod-icon">${mod.icon}</span>
+        ${count>0?`<span class="mod-badge" style="background:${mod.color}22;color:${mod.color}">${count}</span>`:''}
+      </div>
+      <div class="mod-name">${mod.name}</div>
+      <div class="mod-topics">${mod.topics.length} tópicos</div>
+      ${mod.hasCalc?'<span class="calc-tag">🧮 Calculadora</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  renderStats();
+  renderGrid();
+  document.getElementById('dashboard-view').style.display='block';
+  document.getElementById('module-view').style.display='none';
+  document.getElementById('back-btn').style.display='none';
+  document.getElementById('float-home').classList.remove('visible');
+  document.getElementById('search-input').style.display='';
+  document.getElementById('header-title').textContent='📚 Maths Dashboard';
+  document.getElementById('header-sub').style.display='';
+  currentMod=null;
+}
+
+// ── Module ──
+function openMod(id) {
+  currentMod = MODULES.find(m=>m.id===id);
+  document.getElementById('dashboard-view').style.display='none';
+  document.getElementById('module-view').style.display='block';
+  document.getElementById('back-btn').style.display='';
+  document.getElementById('float-home').classList.add('visible');
+  document.getElementById('search-input').style.display='none';
+  document.getElementById('header-title').textContent = currentMod.icon + ' ' + currentMod.name;
+  document.getElementById('header-sub').style.display='none';
+  buildModuleView();
+}
+
+function goHome() { renderDashboard(); }
+
+function buildModuleView() {
+  const m = currentMod;
+  const tabs = ['teoria','atividades','resumo','duvidas',...(m.hasCalc?['calculadora']:[])];
+  const labels = { teoria:'📖 Teoria', atividades:'📝 Atividades', resumo:'🔄 Resumo/Revisão', duvidas:'💬 Dúvidas', calculadora:'🧮 Calculadora' };
+
+  document.getElementById('mv-tabs').innerHTML = tabs.map((t,i)=>
+    `<button class="mv-tab${i===0?' active':''}" style="color:${i===0?m.color:'var(--text3)'}" onclick="switchTab('${t}',this)">${labels[t]}</button>`
+  ).join('');
+
+  document.getElementById('mv-panels').innerHTML = tabs.map((t,i)=>
+    `<div class="mv-panel${i===0?' active':''}" id="panel-${t}"></div>`
+  ).join('');
+
+  renderTeoria();
+  renderAtividades();
+  renderResumo();
+  renderDuvidas();
+  if(m.hasCalc) renderCalc();
+}
+
+function switchTab(t, btn) {
+  document.querySelectorAll('.mv-tab').forEach(b=>{ b.classList.remove('active'); b.style.color='var(--text3)'; });
+  document.querySelectorAll('.mv-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  btn.style.color = currentMod.color;
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='atividades') renderAtividades();
+}
+
+// ── Teoria ──
+function renderTeoria() {
+  const m = currentMod;
+  const pills = m.topics.map(t=>`<span class="topic-pill" style="background:${m.color}18;color:${m.color}">${t}</span>`).join('');
+  document.getElementById('panel-teoria').innerHTML = `
+    <p style="font-size:13px;color:var(--text3);margin-bottom:10px">Tópicos deste módulo:</p>
+    <div class="topics-list">${pills}</div>
+    <div class="summary-box"><pre>${SUMMARIES[m.id]||'Resumo em breve.'}</pre></div>`;
+}
+
+// ── Atividades ──
+function renderAtividades() {
+  const m = currentMod;
+  const acts = state.activities.filter(a=>a.modId===m.id);
+
+  // update tab label
+  document.querySelectorAll('.mv-tab').forEach(b=>{
+    if(b.textContent.startsWith('📝')) b.textContent = '📝 Atividades' + (acts.length>0?` (${acts.length})`:'');
+  });
+
+  const p = document.getElementById('panel-atividades');
+  p.innerHTML = `
+    <div class="act-toolbar">
+      <div class="act-toolbar-left">
+        <button class="btn-primary" id="btn-gen-q" style="background:${m.color}" onclick="gerarAtividade('questao')">⚡ Gerar Questão</button>
+        <button class="btn-outline" id="btn-gen-e" style="color:${m.color};border-color:${m.color}60" onclick="gerarAtividade('equacao')">= Gerar Equação</button>
+      </div>
+      <button class="btn-outline" onclick="toggleAddManual()">✏️ Adicionar Manual</button>
+    </div>
+    <div id="add-manual-box" style="display:none" class="add-manual-box">
+      <h3>Adicionar questão manualmente</h3>
+      <div class="tipo-row">
+        <button class="tipo-btn active" id="local-tipo-q" style="background:${m.color};color:#fff" onclick="setLocalTipo('questao')">📝 Questão</button>
+        <button class="tipo-btn" id="local-tipo-e" onclick="setLocalTipo('equacao')">= Equação</button>
+      </div>
+      <div class="field-wrap"><textarea id="local-enunciado" rows="3" placeholder="Enunciado da questão..."></textarea></div>
+      <div class="field-wrap" id="local-eq-wrap" style="display:none"><input type="text" id="local-equacao" placeholder="Ex: 2x + 5 = 11" style="font-family:monospace"></div>
+      <div class="btn-row">
+        <button class="btn-primary" style="background:${m.color}" onclick="addManual()">Adicionar</button>
+        <button class="btn-outline" onclick="toggleAddManual()">Cancelar</button>
+      </div>
+    </div>
+    <div id="acts-list"></div>`;
+
+  renderActsList();
+}
+
+let localTipo = 'questao';
+function setLocalTipo(t) {
+  localTipo = t;
+  const m = currentMod;
+  document.getElementById('local-tipo-q').style.background = t==='questao'?m.color:'transparent';
+  document.getElementById('local-tipo-q').style.color = t==='questao'?'#fff':'var(--text2)';
+  document.getElementById('local-tipo-e').style.background = t==='equacao'?m.color:'transparent';
+  document.getElementById('local-tipo-e').style.color = t==='equacao'?'#fff':'var(--text2)';
+  document.getElementById('local-eq-wrap').style.display = t==='equacao'?'block':'none';
+}
+
+function toggleAddManual() {
+  const box = document.getElementById('add-manual-box');
+  box.style.display = box.style.display==='none'?'block':'none';
+}
+
+function addManual() {
+  const en = document.getElementById('local-enunciado').value.trim();
+  if(!en) return;
+  const eq = localTipo==='equacao' ? document.getElementById('local-equacao').value.trim() : '';
+  state.activities.push({ id:Date.now(), modId:currentMod.id, tipo:localTipo, enunciado:en, equacao:eq, manual:true, criadoEm:new Date().toLocaleDateString('pt-BR') });
+  saveState();
+  document.getElementById('local-enunciado').value='';
+  if(document.getElementById('local-equacao')) document.getElementById('local-equacao').value='';
+  document.getElementById('add-manual-box').style.display='none';
+  renderAtividades();
+}
+
+function renderActsList() {
+  const m = currentMod;
+  const acts = state.activities.filter(a=>a.modId===m.id);
+  const el = document.getElementById('acts-list');
+  if(!el) return;
+  if(acts.length===0) {
+    el.innerHTML=`<div class="act-empty"><div class="act-empty-icon">📝</div><p>Nenhuma atividade ainda. Gere uma ou adicione manualmente!</p></div>`;
+    return;
+  }
+  el.innerHTML = acts.map(act=>`
+    <div class="act-item" id="act-${act.id}">
+      <div class="act-item-header">
+        <span class="act-tag" style="background:${m.color}18;color:${m.color}">${act.tipo==='equacao'?'Equação':'Questão'} ${act.manual?'• Manual':'• IA'}</span>
+        <button class="act-delete" onclick="deleteAct(${act.id})">✕</button>
+      </div>
+      <div class="act-enunciado">${act.enunciado}</div>
+      ${act.tipo==='equacao'&&act.equacao?`<div class="act-equacao" style="color:${m.color}">${act.equacao}</div>`:''}
+      <textarea class="act-resp" id="resp-${act.id}" placeholder="Digite sua resposta aqui..." rows="2"></textarea>
+      <div class="act-btns">
+        <button class="act-btn" style="background:${m.color};color:#fff" onclick="aiAction(${act.id},'correcao')">✓ Correção</button>
+        <button class="act-btn-outline" style="color:${m.color};border:0.5px solid ${m.color}" onclick="aiAction(${act.id},'explicacao')">💡 Explicação</button>
+      </div>
+      <div id="feedback-${act.id}"></div>
+    </div>`).join('');
+}
+
+function deleteAct(id) {
+  state.activities = state.activities.filter(a=>a.id!==id);
+  saveState(); renderAtividades();
+}
+
+async function gerarAtividade(tipo) {
+  const m = currentMod;
+  const btn = document.getElementById(tipo==='questao'?'btn-gen-q':'btn-gen-e');
+  btn.disabled=true; btn.innerHTML = dots()+(tipo==='questao'?' Gerando...':" Gerando...");
+  const sys = 'Você é um professor de matemática para concursos. Responda SOMENTE em JSON válido, sem markdown, sem texto extra.';
+  const prompt = tipo==='questao'
+    ? `Crie uma questão de matemática de concurso sobre "${m.name}". Retorne JSON: {"enunciado":"...","tipo":"questao"}. Questão com contexto e dados claros. Nível iniciante/intermediário.`
+    : `Crie uma equação/exercício direto sobre "${m.name}". Retorne JSON: {"enunciado":"Resolva:","equacao":"...","tipo":"equacao"}. Equação em formato matemático claro.`;
+  try {
+    const r = await callClaude([{role:'user',content:prompt}], sys);
+    const clean = r.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    state.activities.push({id:Date.now(),modId:m.id,...parsed,criadoEm:new Date().toLocaleDateString('pt-BR')});
+    saveState(); renderAtividades();
+  } catch(e) { alert('Erro ao gerar atividade. Tente novamente.'); }
+  btn.disabled=false;
+  btn.textContent = tipo==='questao'?'⚡ Gerar Questão':'= Gerar Equação';
+}
+
+async function aiAction(actId, tipo) {
+  const act = state.activities.find(a=>a.id===actId);
+  if(!act) return;
+  const m = currentMod;
+  const respEl = document.getElementById('resp-'+actId);
+  const resp = respEl ? respEl.value : '';
+  const feedEl = document.getElementById('feedback-'+actId);
+  const btnEl = feedEl.previousElementSibling.querySelector(tipo==='correcao'?'button:first-child':'button:last-child');
+  if(btnEl) { btnEl.disabled=true; btnEl.innerHTML=dots(); }
+  feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-title" style="color:${m.color}">${dots()} Aguarde...</div></div>`;
+
+  const sys = 'Você é um professor de matemática didático. Responda em português brasileiro de forma clara e passo a passo.';
+  let prompt = tipo==='correcao'
+    ? `Corrija a seguinte questão mostrando a conta passo a passo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nResposta do aluno: "${resp||'(não respondeu)'}"\n\nMostre: 1) Resolução completa passo a passo 2) Se a resposta está certa ou errada 3) Onde errou (se errou)`
+    : `Explique detalhadamente o raciocínio desta questão para um iniciante completo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nExplique cada conceito, por que cada passo é feito assim, e exemplos similares.`;
+  try {
+    const r = await callClaude([{role:'user',content:prompt}], sys);
+    feedEl.innerHTML = `<div class="act-feedback" style="border:0.5px solid ${m.color}40">
+      <div class="act-feedback-title" style="color:${m.color}">${tipo==='correcao'?'✓ Correção':'💡 Explicação'}</div>
+      <div class="act-feedback-body">${r}</div></div>`;
+  } catch(e) {
+    feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-body">Erro ao conectar com a IA.</div></div>`;
+  }
+  if(btnEl) { btnEl.disabled=false; btnEl.textContent = tipo==='correcao'?'✓ Correção':'💡 Explicação'; }
+}
+
+// ── Dúvidas (chat com IA via n8n) ──
+let chatHistory = [];
+let n8nWebhookUrl = localStorage.getItem('n8n_webhook_url') || '';
+let chatSessionId = 'session_' + Date.now();
+
+function renderDuvidas() {
+  const m = currentMod;
+  const p = document.getElementById('panel-duvidas');
+  p.innerHTML = `
+    <div class="webhook-notice" id="webhook-config">
+      <span>🔗</span>
+      <input type="text" id="webhook-url-input" placeholder="Ex: https://mychelle.app.n8n.cloud/webhook/seu-id" value="${n8nWebhookUrl}" oninput="updateWebhookUrl()">
+      <button onclick="saveWebhookUrl()">Salvar</button>
+    </div>
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty" id="chat-empty">
+          <div class="chat-empty-icon">💬</div>
+          <p style="font-size:14px;font-weight:600;color:var(--text2)">Professora de Matemática IA</p>
+          <p style="font-size:12px">Tire dúvidas sobre <strong>${m.name}</strong> ou qualquer tema de matemática!</p>
+        </div>
+      </div>
+      <div>
+        <div class="chat-suggestions" id="chat-suggestions">
+          ${getSuggestions(m).map(s=>`<button class="chat-sugg-btn" onclick="sendSuggestion(this.textContent)">${s}</button>`).join('')}
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chat-input" placeholder="Digite sua dúvida de matemática..." rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+          <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()">➤</button>
+        </div>
+      </div>
+    </div>`;
+  chatHistory = [];
+}
+
+function getSuggestions(m) {
+  const base = [
+    `Como resolver uma questão de ${m.name}?`,
+    `Qual a fórmula principal de ${m.name}?`,
+    `Me dê um exemplo prático de ${m.name}`,
+    `Quais os erros mais comuns em ${m.name}?`,
+  ];
+  return base.slice(0,3);
+}
+
+function updateWebhookUrl() {
+  n8nWebhookUrl = document.getElementById('webhook-url-input').value.trim();
+}
+function saveWebhookUrl() {
+  n8nWebhookUrl = document.getElementById('webhook-url-input').value.trim();
+  localStorage.setItem('n8n_webhook_url', n8nWebhookUrl);
+  const btn = document.querySelector('#webhook-config button');
+  btn.textContent = '✓ Salvo!';
+  setTimeout(()=>{ btn.textContent='Salvar'; }, 1500);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function chatKeydown(e) {
+  if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function sendSuggestion(text) {
+  document.getElementById('chat-input').value = text;
+  sendChatMessage();
+}
+
+function appendBubble(role, text) {
+  const container = document.getElementById('chat-messages');
+  const empty = document.getElementById('chat-empty');
+  if(empty) empty.remove();
+  document.getElementById('chat-suggestions').style.display = 'none';
+
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}`;
+  div.id = role === 'ai' ? 'bubble-last-ai' : '';
+  // Formatar texto: negrito simples, emojis preservados
+  div.innerHTML = text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/__(.*?)__/g,'<strong>$1</strong>');
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  // Mostrar mensagem do usuário
+  appendBubble('user', msg);
+  chatHistory.push({ role:'user', content: msg });
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Loading bubble
+  const container = document.getElementById('chat-messages');
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'chat-bubble ai';
+  loadDiv.innerHTML = dots() + ' Aguardando professora...';
+  container.appendChild(loadDiv);
+  container.scrollTop = container.scrollHeight;
+
+  const sendBtn = document.getElementById('chat-send-btn');
+  sendBtn.disabled = true;
+
+  try {
+    let respText = '';
+
+    if(n8nWebhookUrl) {
+      // Usar n8n /chat endpoint — aceita CORS e formato correto
+      const baseUrl = n8nWebhookUrl.replace(/\/chat$/, "");
+      const chatUrl = baseUrl + "/chat";
+      const res = await fetch(chatUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendMessage",
+          sessionId: chatSessionId,
+          chatInput: msg
+        })
+      });
+      const data = await res.json();
+      respText = data.output || data.text || data.response || data.message || JSON.stringify(data);
+    } else {
+      // Fallback: Claude direto
+      const sys = `Você é uma professora especialista em matemática para concursos e vestibulares. Ensine de forma extremamente didática, passo a passo, com exemplos simples. Estamos estudando o módulo: ${currentMod.name}. Responda em português brasileiro. Use emojis moderadamente para facilitar a leitura. Organize com tópicos claros.`;
+      respText = await callClaude(chatHistory.slice(-10), sys);
+    }
+
+    chatHistory.push({ role:'assistant', content: respText });
+    loadDiv.remove();
+    appendBubble('ai', respText);
+  } catch(e) {
+    loadDiv.remove();
+    appendBubble('ai', '❌ Erro ao conectar com a professora IA. Verifique a URL do webhook ou tente novamente.');
+  }
+
+  sendBtn.disabled = false;
+}
+
+// ── Resumo ──
+function renderResumo() {
+  const m = currentMod;
+  document.getElementById('panel-resumo').innerHTML = `
+    <div class="resumo-box">
+      <h3>📋 Resumo Rápido</h3>
+      <pre style="font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;font-family:inherit">${SUMMARIES[m.id]||'Resumo em breve.'}</pre>
+    </div>
+    <button id="btn-gen-resumo" class="btn-primary" style="background:${m.color}" onclick="gerarResumoIA()">✨ Gerar Revisão Completa com IA</button>
+    <div class="ai-resumo-box" id="ai-resumo-box" style="border-color:${m.color}40">
+      <h3 style="color:${m.color}">✨ Revisão gerada pela IA</h3>
+      <div class="ai-resumo-content" id="ai-resumo-content"></div>
+    </div>`;
+}
+
+async function gerarResumoIA() {
+  const m = currentMod;
+  const btn = document.getElementById('btn-gen-resumo');
+  btn.disabled=true; btn.innerHTML=dots()+' Gerando revisão...';
+  const sys = 'Você é um professor de matemática para concursos. Crie um resumo didático completo em português brasileiro.';
+  const prompt = `Crie um resumo/revisão completo e didático sobre "${m.name}" para quem estuda concursos públicos. Inclua: definições, fórmulas principais, exemplos práticos, dicas de prova, erros comuns. Use formatação clara.`;
+  try {
+    const r = await callClaude([{role:'user',content:prompt}], sys);
+    document.getElementById('ai-resumo-content').textContent = r;
+    document.getElementById('ai-resumo-box').style.display='block';
+  } catch(e) { alert('Erro ao gerar revisão.'); }
+  btn.disabled=false; btn.textContent='✨ Gerar Revisão Completa com IA';
+}
+
+// ── Calculadoras ──
+function renderCalc() {
+  const m = currentMod;
+  const p = document.getElementById('panel-calculadora');
+  if(!p) return;
+  if(m.id==='porcentagem') p.innerHTML = calcPorcentagemHTML();
+  else if(m.id==='regratres') p.innerHTML = calcR3HTML();
+  else if(m.id==='jurossimples') p.innerHTML = calcJurosHTML('simples');
+  else if(m.id==='juroscompostos') p.innerHTML = calcJurosHTML('compostos');
+  else if(m.id==='geometria') p.innerHTML = calcGeometriaHTML();
+}
+
+// Porcentagem
+function calcPorcentagemHTML() {
+  return `<div class="calc-box">
+    <div class="calc-title">🧮 Calculadora de Porcentagem</div>
+    <div class="calc-type-row">
+      ${[['calc','X% de Y'],['aumento','Aumento X%'],['desconto','Desconto X%'],['qual','Qual % é?']].map(([v,l])=>
+        `<button class="calc-type-btn${v==='calc'?' active':''}" style="${v==='calc'?'background:#E67E22;color:#fff':''}" onclick="setPTipo('${v}',this)">${l}</button>`
+      ).join('')}
+    </div>
+    <div class="calc-fields" id="p-fields">
+      <div><label class="field-label" id="p-l1">Porcentagem (%)</label><input type="number" id="p-v1" placeholder="0"></div>
+      <div><label class="field-label" id="p-l2">Valor base</label><input type="number" id="p-v2" placeholder="0"></div>
+    </div>
+    <button class="btn-primary" style="background:#E67E22;width:100%;margin-bottom:0" onclick="calcPorcentagem()">Calcular</button>
+    <div class="calc-result" id="p-result" style="display:none">
+      <div class="calc-result-val" id="p-val" style="color:#E67E22"></div>
+      <div class="calc-result-eq" id="p-eq"></div>
+    </div>
+  </div>`;
+}
+let pTipo = 'calc';
+function setPTipo(t, btn) {
+  pTipo=t;
+  document.querySelectorAll('.calc-type-btn').forEach(b=>{b.style.background='transparent';b.style.color='var(--text2)';});
+  btn.style.background='#E67E22'; btn.style.color='#fff';
+  const lbls = {calc:['Porcentagem (%)','Valor base'],aumento:['Aumento (%)','Valor original'],desconto:['Desconto (%)','Valor original'],qual:['Parte','Total']};
+  document.getElementById('p-l1').textContent=lbls[t][0];
+  document.getElementById('p-l2').textContent=lbls[t][1];
+  document.getElementById('p-result').style.display='none';
+}
+function calcPorcentagem() {
+  const a=parseFloat(document.getElementById('p-v1').value), b=parseFloat(document.getElementById('p-v2').value);
+  if(isNaN(a)||isNaN(b)) return;
+  let val, eq;
+  if(pTipo==='calc'){ val=(a/100*b).toFixed(2); eq=`${a}% de ${b} = (${a}/100) × ${b} = ${val}`; }
+  else if(pTipo==='aumento'){ const r=b*(1+a/100); val=r.toFixed(2); eq=`Aumento de ${a}%: ${b} × (1 + ${a}/100) = ${b} × ${(1+a/100).toFixed(4)} = ${val}`; }
+  else if(pTipo==='desconto'){ const r=b*(1-a/100); val=r.toFixed(2); eq=`Desconto de ${a}%: ${b} × (1 − ${a}/100) = ${b} × ${(1-a/100).toFixed(4)} = ${val}`; }
+  else { val=(a/b*100).toFixed(2)+'%'; eq=`Qual % de ${b} é ${a}? → (${a}/${b}) × 100 = ${(a/b*100).toFixed(2)}%`; }
+  document.getElementById('p-val').textContent=val;
+  document.getElementById('p-eq').textContent=eq;
+  document.getElementById('p-result').style.display='block';
+}
+
+// Regra de 3
+function calcR3HTML() {
+  return `<div class="calc-box">
+    <div class="calc-title">🧮 Calculadora de Regra de Três</div>
+    <div class="calc-type-row">
+      <button class="calc-type-btn active" style="background:#E74C3C;color:#fff" onclick="setR3Tipo('direta',this)">Direta</button>
+      <button class="calc-type-btn" onclick="setR3Tipo('inversa',this)">Inversa</button>
+    </div>
+    <div class="r3-table">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Monte a tabela: Valor 1A está para 1B, assim como 2A está para X</p>
+      <div class="r3-row">
+        <div><label class="field-label">Valor 1A</label><input type="number" id="r3-a" placeholder="Ex: 3"></div>
+        <div class="r3-sep">—</div>
+        <div><label class="field-label">Valor 1B</label><input type="number" id="r3-b" placeholder="Ex: 6"></div>
+      </div>
+      <div class="r3-row">
+        <div><label class="field-label">Valor 2A</label><input type="number" id="r3-c" placeholder="Ex: 5"></div>
+        <div class="r3-sep">—</div>
+        <div><label class="field-label">X = ?</label><div class="r3-x-result" id="r3-x" style="color:#E74C3C">?</div></div>
+      </div>
+    </div>
+    <button class="btn-primary" style="background:#E74C3C;width:100%" onclick="calcR3()">Calcular e Explicar</button>
+    <div class="calc-result" id="r3-result" style="display:none">
+      <div class="calc-result-eq" id="r3-eq"></div>
+    </div>
+  </div>`;
+}
+let r3Tipo='direta';
+function setR3Tipo(t, btn) {
+  r3Tipo=t;
+  document.querySelectorAll('.calc-type-btn').forEach(b=>{b.style.background='transparent';b.style.color='var(--text2)';});
+  btn.style.background='#E74C3C'; btn.style.color='#fff';
+  document.getElementById('r3-result').style.display='none';
+  document.getElementById('r3-x').textContent='?';
+}
+function calcR3() {
+  const a=parseFloat(document.getElementById('r3-a').value), b=parseFloat(document.getElementById('r3-b').value), c=parseFloat(document.getElementById('r3-c').value);
+  if(isNaN(a)||isNaN(b)||isNaN(c)) return;
+  let x, lines;
+  if(r3Tipo==='direta') {
+    x=(b*c)/a;
+    lines=[`Proporção direta:`,`${a} ——— ${b}`,`${c} ——— x`,``,`Multiplicação cruzada:`,`${a} × x = ${b} × ${c}`,`${a}x = ${b*c}`,`x = ${b*c} ÷ ${a}`,`x = ${+x.toFixed(6)}`];
+  } else {
+    x=(a*b)/c;
+    lines=[`Proporção INVERSA:`,`${a} ——— ${b}`,`${c} ——— x`,``,`Como é inversa, invertemos:`,`${a} × ${b} = ${c} × x`,`${a*b} = ${c}x`,`x = ${a*b} ÷ ${c}`,`x = ${+x.toFixed(6)}`];
+  }
+  document.getElementById('r3-x').textContent = +x.toFixed(6);
+  document.getElementById('r3-eq').textContent = lines.join('\n');
+  document.getElementById('r3-result').style.display='block';
+}
+
+// Juros
+function calcJurosHTML(tipo) {
+  const color = tipo==='simples'?'#16A085':'#8E44AD';
+  const title = tipo==='simples'?'Juros Simples':'Juros Compostos';
+  return `<div class="calc-box">
+    <div class="calc-title">🧮 Calculadora de ${title}</div>
+    <div class="calc-grid-3">
+      <div><label class="field-label">Capital (R$)</label><input type="number" id="j-cap" placeholder="1000"></div>
+      <div><label class="field-label">Taxa (%)</label><input type="number" id="j-taxa" placeholder="5"></div>
+      <div><label class="field-label">Tempo</label><input type="number" id="j-tempo" placeholder="3"></div>
+    </div>
+    <button class="btn-primary" style="background:${color};width:100%" onclick="calcJuros('${tipo}','${color}')">Calcular</button>
+    <div id="j-result" style="display:none">
+      <div class="calc-two-results">
+        <div class="calc-mini-card"><div class="calc-mini-label">Montante</div><div class="calc-mini-val" id="j-mont" style="color:${color}"></div></div>
+        <div class="calc-mini-card"><div class="calc-mini-label">Juros</div><div class="calc-mini-val" id="j-jur" style="color:${color}"></div></div>
+      </div>
+      <div class="calc-result"><div class="calc-result-eq" id="j-eq"></div></div>
+    </div>
+  </div>`;
+}
+function calcJuros(tipo, color) {
+  const C=parseFloat(document.getElementById('j-cap').value), taxa=parseFloat(document.getElementById('j-taxa').value), t=parseFloat(document.getElementById('j-tempo').value);
+  if(isNaN(C)||isNaN(taxa)||isNaN(t)) return;
+  const i=taxa/100;
+  let M,J,lines;
+  if(tipo==='simples') {
+    J=C*i*t; M=C+J;
+    lines=[`J = C × i × t`,`J = ${C} × ${taxa}% × ${t}`,`J = ${C} × ${i} × ${t} = R$ ${J.toFixed(2)}`,``,`M = C + J = ${C} + ${J.toFixed(2)} = R$ ${M.toFixed(2)}`];
+  } else {
+    M=C*Math.pow(1+i,t); J=M-C;
+    lines=[`M = C × (1 + i)^t`,`M = ${C} × (1 + ${i})^${t}`,`M = ${C} × (${(1+i).toFixed(4)})^${t}`,`M = ${C} × ${Math.pow(1+i,t).toFixed(6)}`,`M = R$ ${M.toFixed(2)}`,``,`Juros = ${M.toFixed(2)} − ${C} = R$ ${J.toFixed(2)}`];
+  }
+  document.getElementById('j-mont').textContent='R$ '+M.toFixed(2);
+  document.getElementById('j-jur').textContent='R$ '+J.toFixed(2);
+  document.getElementById('j-eq').textContent=lines.join('\n');
+  document.getElementById('j-result').style.display='block';
+}
+
+// Geometria
+function calcGeometriaHTML() {
+  return `<div class="calc-box">
+    <div class="calc-title">🧮 Calculadora de Geometria</div>
+    <div class="calc-type-row" id="geo-tipos">
+      ${[['quadrado','Quadrado'],['retangulo','Retângulo'],['triangulo','Triângulo'],['circulo','Círculo'],['pitagoras','Pitágoras']].map(([v,l],i)=>
+        `<button class="calc-type-btn${i===0?' active':''}" style="${i===0?'background:#117A65;color:#fff':''}" onclick="setGeoTipo('${v}',this)">${l}</button>`
+      ).join('')}
+    </div>
+    <div id="geo-fields" class="calc-fields"></div>
+    <button class="btn-primary" style="background:#117A65;width:100%" onclick="calcGeo()">Calcular</button>
+    <div class="calc-result" id="geo-result" style="display:none"><div class="calc-result-eq" id="geo-eq"></div></div>
+  </div>`;
+}
+let geoTipo='quadrado';
+const geoConfig = {
+  quadrado:{campos:['Lado (l)'],calc:(v)=>{const l=v[0];return[`Área = l² = ${l}² = ${(l*l).toFixed(2)}`,`Perímetro = 4l = 4×${l} = ${(4*l).toFixed(2)}`];}},
+  retangulo:{campos:['Base (b)','Altura (h)'],calc:(v)=>{const[b,h]=v;return[`Área = b×h = ${b}×${h} = ${(b*h).toFixed(2)}`,`Perímetro = 2(b+h) = 2×(${b}+${h}) = ${(2*(b+h)).toFixed(2)}`];}},
+  triangulo:{campos:['Base (b)','Altura (h)'],calc:(v)=>{const[b,h]=v;return[`Área = (b×h)/2 = (${b}×${h})/2 = ${(b*h/2).toFixed(2)}`];}},
+  circulo:{campos:['Raio (r)'],calc:(v)=>{const r=v[0];return[`Área = π×r² = 3.14159×${r}² = ${(Math.PI*r*r).toFixed(2)}`,`Perímetro = 2πr = 2×3.14159×${r} = ${(2*Math.PI*r).toFixed(2)}`];}},
+  pitagoras:{campos:['Cateto a','Cateto b'],calc:(v)=>{const[a,b]=v,c=Math.sqrt(a*a+b*b);return[`a² + b² = c²`,`${a}² + ${b}² = c²`,`${a*a} + ${b*b} = c²`,`c² = ${a*a+b*b}`,`c = √${a*a+b*b} = ${+c.toFixed(6)}`];}},
+};
+function setGeoTipo(t, btn) {
+  geoTipo=t;
+  document.querySelectorAll('#geo-tipos .calc-type-btn').forEach(b=>{b.style.background='transparent';b.style.color='var(--text2)';});
+  btn.style.background='#117A65'; btn.style.color='#fff';
+  renderGeoFields();
+  document.getElementById('geo-result').style.display='none';
+}
+function renderGeoFields() {
+  const cfg=geoConfig[geoTipo];
+  document.getElementById('geo-fields').innerHTML = cfg.campos.map((c,i)=>
+    `<div style="flex:1;min-width:80px"><label class="field-label">${c}</label><input type="number" id="geo-v${i}" placeholder="0"></div>`
+  ).join('');
+}
+function calcGeo() {
+  const cfg=geoConfig[geoTipo];
+  const vals=cfg.campos.map((_,i)=>parseFloat(document.getElementById('geo-v'+i).value));
+  if(vals.some(isNaN)) return;
+  const lines=cfg.calc(vals);
+  document.getElementById('geo-eq').textContent=lines.join('\n');
+  document.getElementById('geo-result').style.display='block';
+}
+
+// ── Modal global ──
+function openModal() {
+  const sel = document.getElementById('modal-mod');
+  sel.innerHTML = MODULES.map(m=>`<option value="${m.id}">${m.icon} ${m.name}</option>`).join('');
+  updateModalSaveColor();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function setModalTipo(t, btn) {
+  modalTipo=t;
+  document.querySelectorAll('#modal-tipo-row .tipo-btn').forEach(b=>{b.style.background='transparent';b.style.color='var(--text2)';});
+  const color = MODULES.find(m=>m.id===document.getElementById('modal-mod').value)?.color||'#4A90D9';
+  btn.style.background=color; btn.style.color='#fff';
+  document.getElementById('modal-eq-wrap').style.display=t==='equacao'?'block':'none';
+}
+function updateModalSaveColor() {
+  const color = MODULES.find(m=>m.id===document.getElementById('modal-mod').value)?.color||'#4A90D9';
+  document.getElementById('modal-save-btn').style.background=color;
+}
+document.getElementById('modal-mod').addEventListener('change',updateModalSaveColor);
+function saveModal() {
+  const en=document.getElementById('modal-enunciado').value.trim();
+  if(!en) return;
+  const modId=document.getElementById('modal-mod').value;
+  const eq=modalTipo==='equacao'?document.getElementById('modal-equacao').value.trim():'';
+  state.activities.push({id:Date.now(),modId,tipo:modalTipo,enunciado:en,equacao:eq,manual:true,criadoEm:new Date().toLocaleDateString('pt-BR')});
+  saveState();
+  document.getElementById('modal-enunciado').value='';
+  document.getElementById('modal-equacao').value='';
+  closeModal();
+  if(currentMod && currentMod.id===modId) renderAtividades();
+  renderStats();
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', e=>{ if(e.target===document.getElementById('modal-overlay')) closeModal(); });
+
+// ── Init ──
+loadState();
+renderDashboard();
+renderGeoFields && (() => {})(); // pre-init silently
+</script>
+</body>
+</html>
