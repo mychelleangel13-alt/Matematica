@@ -444,7 +444,12 @@ function renderAtividades() {
   });
 
   const p = document.getElementById('panel-atividades');
-  p.innerHTML = `
+  const webhookAviso = !n8nWebhookUrl
+    ? `<div class="webhook-notice" style="margin-bottom:14px">
+        ⚠️ <span>Configure o webhook da professora IA na aba <strong>💬 Dúvidas</strong> para gerar questões e usar correção/explicação com IA.</span>
+       </div>`
+    : '';
+  p.innerHTML = webhookAviso + `
     <div class="act-toolbar">
       <div class="act-toolbar-left">
         <button class="btn-primary" id="btn-gen-q" style="background:${m.color}" onclick="gerarAtividade('questao')">⚡ Gerar Questão</button>
@@ -529,21 +534,47 @@ function deleteAct(id) {
   saveState(); renderAtividades();
 }
 
+// ── Utilitário: chama n8n ou Claude como fallback ──
+async function callIA(prompt, sessionSuffix) {
+  if(n8nWebhookUrl) {
+    const baseUrl = n8nWebhookUrl.replace(/\/chat$/, '');
+    const res = await fetch(baseUrl + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sendMessage',
+        sessionId: chatSessionId + (sessionSuffix||''),
+        chatInput: prompt
+      })
+    });
+    const data = await res.json();
+    return data.output || data.text || data.response || data.message || JSON.stringify(data);
+  } else {
+    // Fallback: Claude direto
+    const sys = 'Você é uma professora de matemática didática. Responda em português brasileiro de forma clara e passo a passo.';
+    return await callClaude([{role:'user', content: prompt}], sys);
+  }
+}
+
 async function gerarAtividade(tipo) {
   const m = currentMod;
   const btn = document.getElementById(tipo==='questao'?'btn-gen-q':'btn-gen-e');
   btn.disabled=true; btn.innerHTML = dots()+(tipo==='questao'?' Gerando...':" Gerando...");
-  const sys = 'Você é um professor de matemática para concursos. Responda SOMENTE em JSON válido, sem markdown, sem texto extra.';
+
   const prompt = tipo==='questao'
-    ? `Crie uma questão de matemática de concurso sobre "${m.name}". Retorne JSON: {"enunciado":"...","tipo":"questao"}. Questão com contexto e dados claros. Nível iniciante/intermediário.`
-    : `Crie uma equação/exercício direto sobre "${m.name}". Retorne JSON: {"enunciado":"Resolva:","equacao":"...","tipo":"equacao"}. Equação em formato matemático claro.`;
+    ? `Crie uma questão de matemática de concurso sobre "${m.name}". Responda SOMENTE em JSON válido, sem markdown, sem texto extra. Formato: {"enunciado":"...","tipo":"questao"}. Questão com contexto e dados claros, nível iniciante/intermediário.`
+    : `Crie uma equação/exercício direto sobre "${m.name}". Responda SOMENTE em JSON válido, sem markdown, sem texto extra. Formato: {"enunciado":"Resolva:","equacao":"...","tipo":"equacao"}. Equação em formato matemático claro.`;
   try {
-    const r = await callClaude([{role:'user',content:prompt}], sys);
+    const r = await callIA(prompt, '_gerar');
     const clean = r.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
-    state.activities.push({id:Date.now(),modId:m.id,...parsed,criadoEm:new Date().toLocaleDateString('pt-BR')});
+    // extrai o JSON mesmo que venha com texto antes/depois
+    const match = clean.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(match ? match[0] : clean);
+    state.activities.push({id:Date.now(), modId:m.id, ...parsed, criadoEm:new Date().toLocaleDateString('pt-BR')});
     saveState(); renderAtividades();
-  } catch(e) { alert('Erro ao gerar atividade. Tente novamente.'); }
+  } catch(e) {
+    alert('Erro ao gerar atividade. Verifique o webhook na aba Dúvidas ou tente novamente.');
+  }
   btn.disabled=false;
   btn.textContent = tipo==='questao'?'⚡ Gerar Questão':'= Gerar Equação';
 }
@@ -557,19 +588,18 @@ async function aiAction(actId, tipo) {
   const feedEl = document.getElementById('feedback-'+actId);
   const btnEl = feedEl.previousElementSibling.querySelector(tipo==='correcao'?'button:first-child':'button:last-child');
   if(btnEl) { btnEl.disabled=true; btnEl.innerHTML=dots(); }
-  feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-title" style="color:${m.color}">${dots()} Aguarde...</div></div>`;
+  feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-title" style="color:${m.color}">${dots()} Professora pensando...</div></div>`;
 
-  const sys = 'Você é um professor de matemática didático. Responda em português brasileiro de forma clara e passo a passo.';
-  let prompt = tipo==='correcao'
-    ? `Corrija a seguinte questão mostrando a conta passo a passo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nResposta do aluno: "${resp||'(não respondeu)'}"\n\nMostre: 1) Resolução completa passo a passo 2) Se a resposta está certa ou errada 3) Onde errou (se errou)`
-    : `Explique detalhadamente o raciocínio desta questão para um iniciante completo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nExplique cada conceito, por que cada passo é feito assim, e exemplos similares.`;
+  const prompt = tipo==='correcao'
+    ? `Corrija esta questão de ${m.name} mostrando a conta passo a passo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nResposta do aluno: "${resp||'(não respondeu)'}"\n\nMostre: 1) Resolução completa passo a passo 2) Se a resposta está certa ou errada 3) Onde errou (se errou)`
+    : `Explique detalhadamente o raciocínio desta questão de ${m.name} para um iniciante completo:\n\n${act.enunciado}\n${act.tipo==='equacao'?`\nEquação: ${act.equacao||''}`:''}  \n\nExplique cada conceito, por que cada passo é feito assim, e dê exemplos similares.`;
   try {
-    const r = await callClaude([{role:'user',content:prompt}], sys);
+    const r = await callIA(prompt, '_acao_'+actId);
     feedEl.innerHTML = `<div class="act-feedback" style="border:0.5px solid ${m.color}40">
       <div class="act-feedback-title" style="color:${m.color}">${tipo==='correcao'?'✓ Correção':'💡 Explicação'}</div>
       <div class="act-feedback-body">${r}</div></div>`;
   } catch(e) {
-    feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-body">Erro ao conectar com a IA.</div></div>`;
+    feedEl.innerHTML = `<div class="act-feedback"><div class="act-feedback-body">❌ Erro ao conectar com a professora IA. Verifique o webhook na aba Dúvidas.</div></div>`;
   }
   if(btnEl) { btnEl.disabled=false; btnEl.textContent = tipo==='correcao'?'✓ Correção':'💡 Explicação'; }
 }
@@ -685,35 +715,13 @@ async function sendChatMessage() {
   sendBtn.disabled = true;
 
   try {
-    let respText = '';
-
-    if(n8nWebhookUrl) {
-      // Usar n8n /chat endpoint — aceita CORS e formato correto
-      const baseUrl = n8nWebhookUrl.replace(/\/chat$/, "");
-      const chatUrl = baseUrl + "/chat";
-      const res = await fetch(chatUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "sendMessage",
-          sessionId: chatSessionId,
-          chatInput: msg
-        })
-      });
-      const data = await res.json();
-      respText = data.output || data.text || data.response || data.message || JSON.stringify(data);
-    } else {
-      // Fallback: Claude direto
-      const sys = `Você é uma professora especialista em matemática para concursos e vestibulares. Ensine de forma extremamente didática, passo a passo, com exemplos simples. Estamos estudando o módulo: ${currentMod.name}. Responda em português brasileiro. Use emojis moderadamente para facilitar a leitura. Organize com tópicos claros.`;
-      respText = await callClaude(chatHistory.slice(-10), sys);
-    }
-
+    const respText = await callIA(msg, '_chat');
     chatHistory.push({ role:'assistant', content: respText });
     loadDiv.remove();
     appendBubble('ai', respText);
   } catch(e) {
     loadDiv.remove();
-    appendBubble('ai', '❌ Erro ao conectar com a professora IA. Verifique a URL do webhook ou tente novamente.');
+    appendBubble('ai', '❌ Erro ao conectar com a professora IA. Configure o webhook na barra amarela acima.');
   }
 
   sendBtn.disabled = false;
