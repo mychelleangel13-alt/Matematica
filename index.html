@@ -746,13 +746,12 @@ async function gerarResumoIA() {
   const m = currentMod;
   const btn = document.getElementById('btn-gen-resumo');
   btn.disabled=true; btn.innerHTML=dots()+' Gerando revisão...';
-  const sys = 'Você é um professor de matemática para concursos. Crie um resumo didático completo em português brasileiro.';
-  const prompt = `Crie um resumo/revisão completo e didático sobre "${m.name}" para quem estuda concursos públicos. Inclua: definições, fórmulas principais, exemplos práticos, dicas de prova, erros comuns. Use formatação clara.`;
+  const prompt = `Crie um resumo/revisão completo e didático sobre "${m.name}" para quem estuda concursos públicos. Inclua: definições, fórmulas principais, exemplos práticos, dicas de prova e erros comuns. Use formatação clara com títulos e seções.`;
   try {
-    const r = await callClaude([{role:'user',content:prompt}], sys);
+    const r = await callIA(prompt, '_resumo');
     document.getElementById('ai-resumo-content').textContent = r;
     document.getElementById('ai-resumo-box').style.display='block';
-  } catch(e) { alert('Erro ao gerar revisão.'); }
+  } catch(e) { alert('Erro ao gerar revisão. Verifique o webhook na aba Dúvidas.'); }
   btn.disabled=false; btn.textContent='✨ Gerar Revisão Completa com IA';
 }
 
