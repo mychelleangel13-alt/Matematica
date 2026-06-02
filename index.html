@@ -323,14 +323,16 @@ function saveState() {
   try { localStorage.setItem('math_dash', JSON.stringify(state)); } catch{}
 }
 
-// ── Claude API ──
+// ── Groq API ──
 async function callClaude(messages, sys) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:sys, messages })
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+    body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:1000, messages:[{role:'system',content:sys||'Você é uma professora de matemática didática. Responda em português brasileiro de forma clara e passo a passo.'}, ...messages] })
   });
   const d = await r.json();
-  return (d.content||[]).map(c=>c.text||'').join('') || 'Erro na resposta.';
+  if(d.error) throw new Error(d.error.message||'Erro da API');
+  return d.choices?.[0]?.message?.content || 'Erro na resposta.';
 }
 
 // ── Dots ──
@@ -396,8 +398,8 @@ function goHome() { renderDashboard(); }
 
 function buildModuleView() {
   const m = currentMod;
-  const tabs = ['teoria','atividades','resumo','duvidas',...(m.hasCalc?['calculadora']:[])];
-  const labels = { teoria:'📖 Teoria', atividades:'📝 Atividades', resumo:'🔄 Resumo/Revisão', duvidas:'💬 Dúvidas', calculadora:'🧮 Calculadora' };
+  const tabs = ['teoria','atividades','resumo','duvidas','ia',...(m.hasCalc?['calculadora']:[])];
+  const labels = { teoria:'📖 Teoria', atividades:'📝 Atividades', resumo:'🔄 Resumo/Revisão', duvidas:'💬 Dúvidas', ia:'🤖 IA', calculadora:'🧮 Calculadora' };
 
   document.getElementById('mv-tabs').innerHTML = tabs.map((t,i)=>
     `<button class="mv-tab${i===0?' active':''}" style="color:${i===0?m.color:'var(--text3)'}" onclick="switchTab('${t}',this)">${labels[t]}</button>`
@@ -411,6 +413,7 @@ function buildModuleView() {
   renderAtividades();
   renderResumo();
   renderDuvidas();
+  renderIA();
   if(m.hasCalc) renderCalc();
 }
 
@@ -529,26 +532,29 @@ function deleteAct(id) {
   saveState(); renderAtividades();
 }
 
-// ── Utilitário: chama n8n ou Claude como fallback ──
+// ── Utilitário: chama n8n ou Claude diretamente ──
 async function callIA(prompt, sessionSuffix) {
   if(n8nWebhookUrl) {
-    const baseUrl = n8nWebhookUrl.replace(/\/chat$/, '');
-    const res = await fetch(baseUrl + '/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'sendMessage',
-        sessionId: chatSessionId + (sessionSuffix||''),
-        chatInput: prompt
-      })
-    });
-    const data = await res.json();
-    return data.output || data.text || data.response || data.message || JSON.stringify(data);
-  } else {
-    // Fallback: Claude direto
-    const sys = 'Você é uma professora de matemática didática. Responda em português brasileiro de forma clara e passo a passo.';
-    return await callClaude([{role:'user', content: prompt}], sys);
+    try {
+      const baseUrl = n8nWebhookUrl.replace(/\/chat$/, '');
+      const res = await fetch(baseUrl + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sendMessage',
+          sessionId: chatSessionId + (sessionSuffix||''),
+          chatInput: prompt
+        })
+      });
+      const data = await res.json();
+      return data.output || data.text || data.response || data.message || JSON.stringify(data);
+    } catch(e) {
+      // se n8n falhar, cai no Claude direto
+    }
   }
+  // Claude diretamente via API
+  const sys = 'Você é uma professora de matemática didática. Responda em português brasileiro de forma clara e passo a passo.';
+  return await callClaude([{role:'user', content: prompt}], sys);
 }
 
 async function gerarAtividade(tipo) {
@@ -601,7 +607,7 @@ async function aiAction(actId, tipo) {
 
 // ── Dúvidas (chat com IA via n8n) ──
 let chatHistory = [];
-let n8nWebhookUrl = 'https://mychelle.app.n8n.cloud/webhook/c1fb86f2-88e8-4fa8-96a1-c41f0d61e1ae';
+let n8nWebhookUrl = null;
 let chatSessionId = 'session_' + Date.now();
 
 function renderDuvidas() {
@@ -735,6 +741,90 @@ async function gerarResumoIA() {
     document.getElementById('ai-resumo-box').style.display='block';
   } catch(e) { alert('Erro ao gerar revisão. Verifique o webhook na aba Dúvidas.'); }
   btn.disabled=false; btn.textContent='✨ Gerar Revisão Completa com IA';
+}
+
+// ── IA Config ──
+function renderIA() {
+  const m = currentMod;
+  const p = document.getElementById('panel-ia');
+  if(!p) return;
+  p.innerHTML = `
+    <div style="margin-bottom:18px">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">🤖 Configurações da IA</h3>
+      <p style="font-size:13px;color:var(--text3);line-height:1.6">A IA é usada para gerar questões, correções, explicações e revisões em todos os módulos.</p>
+    </div>
+
+    <div id="ia-status-box" style="border-radius:10px;padding:14px 16px;margin-bottom:18px;background:var(--surface2);border:0.5px solid var(--border2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span id="ia-status-dot" style="width:10px;height:10px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
+        <span id="ia-status-label" style="font-size:13px;font-weight:600;color:var(--text2)">Verificando…</span>
+      </div>
+      <p id="ia-status-desc" style="font-size:12px;color:var(--text3);margin-left:20px">Aguarde um momento</p>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;border:0.5px solid var(--border2)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">🌐 Webhook n8n (opcional)</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.6">Se tiver um fluxo n8n configurado, cole a URL abaixo. Caso contrário, o Claude será usado diretamente.</p>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="ia-webhook-input" placeholder="https://seu-n8n.app.n8n.cloud/webhook/..." style="flex:1;font-size:12px" value="${n8nWebhookUrl||''}">
+        <button class="btn-primary" style="background:${m.color};white-space:nowrap" onclick="saveWebhook()">Salvar</button>
+      </div>
+      ${n8nWebhookUrl?`<button class="btn-outline" style="margin-top:8px;font-size:12px;color:#E74C3C;border-color:#E74C3C" onclick="clearWebhook()">✕ Remover webhook</button>`:''}
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;border:0.5px solid var(--border2)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">🧪 Testar IA agora</div>
+      <button class="btn-primary" id="ia-test-btn" style="background:${m.color};width:100%" onclick="testIA()">Enviar pergunta de teste</button>
+      <div id="ia-test-result" style="margin-top:12px;font-size:13px;line-height:1.7;color:var(--text2);display:none;background:var(--surface);padding:12px;border-radius:8px;border:0.5px solid var(--border2);white-space:pre-wrap"></div>
+    </div>`;
+
+  checkIAStatus();
+}
+
+async function checkIAStatus() {
+  const dot = document.getElementById('ia-status-dot');
+  const lbl = document.getElementById('ia-status-label');
+  const desc = document.getElementById('ia-status-desc');
+  if(!dot) return;
+  try {
+    const r = await callClaude([{role:'user',content:'Diga apenas: OK'}], 'Responda apenas OK.');
+    if(r && r.includes('OK')) {
+      dot.style.background='#27AE60';
+      lbl.style.color='#27AE60'; lbl.textContent='IA Online ✓';
+      desc.textContent = n8nWebhookUrl ? 'Usando webhook n8n + Claude como fallback.' : 'Claude conectado e funcionando normalmente.';
+    } else { throw new Error(); }
+  } catch(e) {
+    dot.style.background='#E74C3C';
+    lbl.style.color='#E74C3C'; lbl.textContent='IA Offline ✗';
+    desc.textContent = 'Não foi possível conectar. Verifique sua conexão ou tente novamente.';
+  }
+}
+
+async function testIA() {
+  const btn = document.getElementById('ia-test-btn');
+  const res = document.getElementById('ia-test-result');
+  btn.disabled=true; btn.innerHTML=dots()+' Testando…';
+  res.style.display='none';
+  try {
+    const r = await callIA('Explique em 2 linhas o que é uma equação do 1º grau.', '_iatest');
+    res.textContent = r;
+    res.style.display='block';
+  } catch(e) {
+    res.textContent = '❌ Erro: ' + e.message;
+    res.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='Enviar pergunta de teste';
+}
+
+function saveWebhook() {
+  const val = document.getElementById('ia-webhook-input').value.trim();
+  n8nWebhookUrl = val || null;
+  renderIA();
+}
+
+function clearWebhook() {
+  n8nWebhookUrl = null;
+  renderIA();
 }
 
 // ── Calculadoras ──
